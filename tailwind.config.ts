@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        heading: ["Space Grotesk", "sans-serif"],
+        body: ["Inter", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -56,6 +60,19 @@ export default {
           "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
+        },
+        "drop-zone": {
+          DEFAULT: "hsl(var(--drop-zone))",
+          border: "hsl(var(--drop-zone-border))",
+          active: "hsl(var(--drop-zone-active))",
+        },
+        "file-item": {
+          DEFAULT: "hsl(var(--file-item))",
+          hover: "hsl(var(--file-item-hover))",
+        },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
         },
       },
       borderRadius: {
