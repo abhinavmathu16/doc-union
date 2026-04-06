@@ -4,7 +4,7 @@ import { FileDown, Upload, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
+
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -61,7 +61,7 @@ async function compressPdfToTarget(
     }
 
     const pdfBytes = await newPdf.save();
-    const blob = new Blob([pdfBytes], { type: "application/pdf" });
+    const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
 
     bestBlob = blob;
 
@@ -106,7 +106,7 @@ async function compressPdfToTarget(
     }
 
     const pdfBytes = await newPdf.save();
-    bestBlob = new Blob([pdfBytes], { type: "application/pdf" });
+    bestBlob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
   }
 
   return bestBlob!;
