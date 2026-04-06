@@ -17,6 +17,9 @@ const ImageResizer = () => {
   const [customWidth, setCustomWidth] = useState(630);
   const [customHeight, setCustomHeight] = useState(810);
   const [processing, setProcessing] = useState(false);
+  const [mode, setMode] = useState<"dimensions" | "filesize">("dimensions");
+  const [selectedSizePreset, setSelectedSizePreset] = useState("1"); // 100KB default
+  const [customSizeKB, setCustomSizeKB] = useState(100);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -24,6 +27,10 @@ const ImageResizer = () => {
   const isCustom = preset.label === "Custom";
   const targetW = isCustom ? customWidth : preset.width;
   const targetH = isCustom ? customHeight : preset.height;
+
+  const sizePreset = SIZE_PRESETS[parseInt(selectedSizePreset)];
+  const isCustomSize = sizePreset.label === "Custom";
+  const targetBytes = isCustomSize ? customSizeKB * 1024 : sizePreset.bytes;
 
   const handleFile = useCallback((f: File) => {
     if (!f.type.startsWith("image/")) {
