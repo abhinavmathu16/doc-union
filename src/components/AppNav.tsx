@@ -1,9 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { FileStack, ImageIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { FileStack, ImageIcon, FileDown } from "lucide-react";
 
 const links = [
   { to: "/", label: "PDF Merger", icon: FileStack },
+  { to: "/pdf-compressor", label: "PDF Compressor", icon: FileDown },
   { to: "/image-resizer", label: "Image Resizer", icon: ImageIcon },
 ];
 
