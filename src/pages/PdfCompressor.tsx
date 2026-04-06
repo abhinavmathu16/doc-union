@@ -298,7 +298,7 @@ const PdfCompressor = () => {
                     <p className="text-sm font-semibold text-foreground">{savings}% smaller</p>
                   </div>
                   {result.size > targetKB * 1024 && (
-                    <p className="text-xs text-amber-500">
+                    <p className="text-xs text-destructive">
                       ⚠ Could not reach target size. This is the best compression achievable.
                     </p>
                   )}
