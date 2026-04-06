@@ -30,7 +30,7 @@ const ImageResizer = () => {
 
   const sizePreset = SIZE_PRESETS[parseInt(selectedSizePreset)];
   const isCustomSize = sizePreset.label === "Custom";
-  const targetBytes = isCustomSize ? customSizeKB * 1024 : sizePreset.bytes;
+  const targetBytes = isCustomSize ? customSizeKB * 1000 : sizePreset.bytes;
 
   const handleFile = useCallback((f: File) => {
     if (!f.type.startsWith("image/")) {
@@ -68,7 +68,7 @@ const ImageResizer = () => {
         toast({ title: "Resized!", description: `Image resized to ${targetW}×${targetH} pixels.` });
       } else {
         blob = await compressImageToSize(file, targetBytes);
-        const sizeKB = (blob.size / 1024).toFixed(0);
+        const sizeKB = (blob.size / 1000).toFixed(0);
         toast({ title: "Compressed!", description: `Image compressed to ${sizeKB} KB.` });
       }
       setResizedBlob(blob);
@@ -235,7 +235,7 @@ const ImageResizer = () => {
                     )}
                     {file && (
                       <p className="text-xs text-muted-foreground">
-                        Current size: {(file.size / 1024).toFixed(0)} KB
+                        Current size: {(file.size / 1000).toFixed(0)} KB
                       </p>
                     )}
                   </>
@@ -280,7 +280,7 @@ const ImageResizer = () => {
                   <div className="flex items-center justify-between px-4 py-3 border-t border-border">
                     <div>
                       <p className="text-sm font-medium text-foreground">
-                        {resizedBlob ? `${(resizedBlob.size / 1024).toFixed(0)} KB` : "Ready"}
+                        {resizedBlob ? `${(resizedBlob.size / 1000).toFixed(0)} KB` : "Ready"}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {mode === "dimensions" ? `${targetW}×${targetH} px` : "Compressed image"}
