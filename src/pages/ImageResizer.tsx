@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ImageIcon, Download, Upload, X, Loader2 } from "lucide-react";
+import { ImageIcon, Download, Upload, X, Loader2, Maximize, HardDrive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { IMAGE_PRESETS, SIZE_PRESETS, resizeImage, compressImageToSize, downloadBlob } from "@/lib/image-utils";
 import { useToast } from "@/hooks/use-toast";
 
