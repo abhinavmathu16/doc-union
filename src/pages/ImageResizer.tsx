@@ -181,50 +181,68 @@ const ImageResizer = () => {
                 </div>
               </div>
 
-              {/* Preset selector */}
+              {/* Controls */}
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">Target Size</label>
-                <Select value={selectedPreset} onValueChange={setSelectedPreset}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {IMAGE_PRESETS.map((p, i) => (
-                      <SelectItem key={i} value={String(i)}>
-                        <span className="font-medium">{p.label}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">{p.description}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {isCustom && (
-                  <div className="flex gap-3">
-                    <div className="flex-1 space-y-1">
-                      <label className="text-xs text-muted-foreground">Width (px)</label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={customWidth}
-                        onChange={(e) => setCustomWidth(Number(e.target.value))}
-                        className="rounded-xl"
-                      />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <label className="text-xs text-muted-foreground">Height (px)</label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={customHeight}
-                        onChange={(e) => setCustomHeight(Number(e.target.value))}
-                        className="rounded-xl"
-                      />
-                    </div>
-                  </div>
+                {mode === "dimensions" ? (
+                  <>
+                    <label className="text-sm font-medium text-foreground">Target Dimensions</label>
+                    <Select value={selectedPreset} onValueChange={setSelectedPreset}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {IMAGE_PRESETS.map((p, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            <span className="font-medium">{p.label}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">{p.description}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isCustom && (
+                      <div className="flex gap-3">
+                        <div className="flex-1 space-y-1">
+                          <label className="text-xs text-muted-foreground">Width (px)</label>
+                          <Input type="number" min={1} value={customWidth} onChange={(e) => setCustomWidth(Number(e.target.value))} className="rounded-xl" />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <label className="text-xs text-muted-foreground">Height (px)</label>
+                          <Input type="number" min={1} value={customHeight} onChange={(e) => setCustomHeight(Number(e.target.value))} className="rounded-xl" />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <label className="text-sm font-medium text-foreground">Target File Size</label>
+                    <Select value={selectedSizePreset} onValueChange={setSelectedSizePreset}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SIZE_PRESETS.map((p, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            <span className="font-medium">{p.label}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isCustomSize && (
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Size (KB)</label>
+                        <Input type="number" min={10} value={customSizeKB} onChange={(e) => setCustomSizeKB(Number(e.target.value))} className="rounded-xl" />
+                      </div>
+                    )}
+                    {file && (
+                      <p className="text-xs text-muted-foreground">
+                        Current size: {(file.size / 1024).toFixed(0)} KB
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
-              {/* Resize button */}
+              {/* Action button */}
               <Button
                 onClick={handleResize}
                 disabled={processing}
@@ -234,12 +252,17 @@ const ImageResizer = () => {
                 {processing ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Resizing…
+                    Processing…
                   </>
-                ) : (
+                ) : mode === "dimensions" ? (
                   <>
                     <ImageIcon className="h-5 w-5" />
                     Resize to {targetW}×{targetH}
+                  </>
+                ) : (
+                  <>
+                    <HardDrive className="h-5 w-5" />
+                    Compress to {isCustomSize ? `${customSizeKB} KB` : sizePreset.label}
                   </>
                 )}
               </Button>
@@ -252,16 +275,16 @@ const ImageResizer = () => {
                   className="overflow-hidden rounded-xl border border-border bg-card"
                 >
                   <div className="flex items-center justify-center p-4 bg-success/5">
-                    <img
-                      src={resizedPreview}
-                      alt="Resized"
-                      className="max-h-48 rounded-lg object-contain"
-                    />
+                    <img src={resizedPreview} alt="Resized" className="max-h-48 rounded-lg object-contain" />
                   </div>
                   <div className="flex items-center justify-between px-4 py-3 border-t border-border">
                     <div>
-                      <p className="text-sm font-medium text-foreground">{targetW}×{targetH} px</p>
-                      <p className="text-xs text-muted-foreground">Resized image ready</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {resizedBlob ? `${(resizedBlob.size / 1024).toFixed(0)} KB` : "Ready"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {mode === "dimensions" ? `${targetW}×${targetH} px` : "Compressed image"}
+                      </p>
                     </div>
                     <Button onClick={handleDownload} size="sm" className="gap-2 rounded-xl">
                       <Download className="h-4 w-4" />
