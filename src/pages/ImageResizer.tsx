@@ -104,9 +104,23 @@ const ImageResizer = () => {
             Image Resizer
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Resize photos for visa, passport & ID applications.
+            Resize or compress photos for visa, passport & ID applications.
           </p>
         </div>
+
+        {/* Mode tabs */}
+        <Tabs value={mode} onValueChange={(v) => setMode(v as "dimensions" | "filesize")} className="mb-6">
+          <TabsList className="grid w-full grid-cols-2 rounded-xl">
+            <TabsTrigger value="dimensions" className="gap-2 rounded-xl">
+              <Maximize className="h-4 w-4" />
+              By Dimensions
+            </TabsTrigger>
+            <TabsTrigger value="filesize" className="gap-2 rounded-xl">
+              <HardDrive className="h-4 w-4" />
+              By File Size
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {/* Upload area */}
         {!file ? (
