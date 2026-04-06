@@ -58,15 +58,23 @@ const ImageResizer = () => {
   };
 
   const handleResize = async () => {
-    if (!file || targetW < 1 || targetH < 1) return;
+    if (!file) return;
     setProcessing(true);
     try {
-      const blob = await resizeImage(file, targetW, targetH);
+      let blob: Blob;
+      if (mode === "dimensions") {
+        if (targetW < 1 || targetH < 1) return;
+        blob = await resizeImage(file, targetW, targetH);
+        toast({ title: "Resized!", description: `Image resized to ${targetW}×${targetH} pixels.` });
+      } else {
+        blob = await compressImageToSize(file, targetBytes);
+        const sizeKB = (blob.size / 1024).toFixed(0);
+        toast({ title: "Compressed!", description: `Image compressed to ${sizeKB} KB.` });
+      }
       setResizedBlob(blob);
       setResizedPreview(URL.createObjectURL(blob));
-      toast({ title: "Resized!", description: `Image resized to ${targetW}×${targetH} pixels.` });
     } catch {
-      toast({ title: "Resize failed", description: "Could not process this image.", variant: "destructive" });
+      toast({ title: "Processing failed", description: "Could not process this image.", variant: "destructive" });
     } finally {
       setProcessing(false);
     }
@@ -74,8 +82,9 @@ const ImageResizer = () => {
 
   const handleDownload = () => {
     if (!resizedBlob || !file) return;
-    const ext = file.name.replace(/.*\./, "");
-    const name = file.name.replace(/\.[^.]+$/, "") + `_${targetW}x${targetH}.jpg`;
+    const name = mode === "dimensions"
+      ? file.name.replace(/\.[^.]+$/, "") + `_${targetW}x${targetH}.jpg`
+      : file.name.replace(/\.[^.]+$/, "") + `_compressed.jpg`;
     downloadBlob(resizedBlob, name);
   };
 
