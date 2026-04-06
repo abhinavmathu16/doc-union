@@ -54,6 +54,75 @@ export function resizeImage(
   });
 }
 
+export const SIZE_PRESETS = [
+  { label: "50 KB", bytes: 50 * 1024 },
+  { label: "100 KB", bytes: 100 * 1024 },
+  { label: "200 KB", bytes: 200 * 1024 },
+  { label: "250 KB", bytes: 250 * 1024 },
+  { label: "500 KB", bytes: 500 * 1024 },
+  { label: "1 MB", bytes: 1024 * 1024 },
+  { label: "Custom", bytes: 0 },
+];
+
+export function compressImageToSize(
+  file: File,
+  targetBytes: number
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = async () => {
+      URL.revokeObjectURL(url);
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("Canvas not supported"));
+      ctx.drawImage(img, 0, 0);
+
+      // Binary search for the right quality
+      let lo = 0.05, hi = 0.95, bestBlob: Blob | null = null;
+      for (let i = 0; i < 15; i++) {
+        const mid = (lo + hi) / 2;
+        const blob = await new Promise<Blob | null>((res) =>
+          canvas.toBlob((b) => res(b), "image/jpeg", mid)
+        );
+        if (!blob) continue;
+        if (blob.size <= targetBytes) {
+          bestBlob = blob;
+          lo = mid;
+        } else {
+          hi = mid;
+        }
+      }
+
+      // If still too large, scale down dimensions
+      if (!bestBlob || bestBlob.size > targetBytes) {
+        let scale = 0.9;
+        while (scale > 0.1) {
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          canvas.width = w;
+          canvas.height = h;
+          ctx.drawImage(img, 0, 0, w, h);
+          const blob = await new Promise<Blob | null>((res) =>
+            canvas.toBlob((b) => res(b), "image/jpeg", 0.5)
+          );
+          if (blob && blob.size <= targetBytes) {
+            bestBlob = blob;
+            break;
+          }
+          scale -= 0.1;
+        }
+      }
+
+      bestBlob ? resolve(bestBlob) : reject(new Error("Cannot compress to target size"));
+    };
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = url;
+  });
+}
+
 export function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
