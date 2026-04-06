@@ -66,7 +66,7 @@ const PdfCompressor = () => {
         objectsPerTick: 100,
       });
 
-      const blob = new Blob([compressed], { type: "application/pdf" });
+      const blob = new Blob([compressed.buffer as ArrayBuffer], { type: "application/pdf" });
       setResult({ blob, size: blob.size });
       toast({ title: "Compressed!", description: `Size reduced to ${formatSize(blob.size)}` });
     } catch {

@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { FileStack, ImageIcon, FileDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const links = [
   { to: "/", label: "PDF Merger", icon: FileStack },
