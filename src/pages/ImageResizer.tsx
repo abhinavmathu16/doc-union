@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ImageIcon, Download, Upload, X, Loader2 } from "lucide-react";
+import { ImageIcon, Download, Upload, X, Loader2, Maximize, HardDrive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { IMAGE_PRESETS, resizeImage, downloadBlob } from "@/lib/image-utils";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { IMAGE_PRESETS, SIZE_PRESETS, resizeImage, compressImageToSize, downloadBlob } from "@/lib/image-utils";
 import { useToast } from "@/hooks/use-toast";
 
 const ImageResizer = () => {
@@ -16,6 +17,9 @@ const ImageResizer = () => {
   const [customWidth, setCustomWidth] = useState(630);
   const [customHeight, setCustomHeight] = useState(810);
   const [processing, setProcessing] = useState(false);
+  const [mode, setMode] = useState<"dimensions" | "filesize">("dimensions");
+  const [selectedSizePreset, setSelectedSizePreset] = useState("1"); // 100KB default
+  const [customSizeKB, setCustomSizeKB] = useState(100);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -23,6 +27,10 @@ const ImageResizer = () => {
   const isCustom = preset.label === "Custom";
   const targetW = isCustom ? customWidth : preset.width;
   const targetH = isCustom ? customHeight : preset.height;
+
+  const sizePreset = SIZE_PRESETS[parseInt(selectedSizePreset)];
+  const isCustomSize = sizePreset.label === "Custom";
+  const targetBytes = isCustomSize ? customSizeKB * 1024 : sizePreset.bytes;
 
   const handleFile = useCallback((f: File) => {
     if (!f.type.startsWith("image/")) {
@@ -50,15 +58,23 @@ const ImageResizer = () => {
   };
 
   const handleResize = async () => {
-    if (!file || targetW < 1 || targetH < 1) return;
+    if (!file) return;
     setProcessing(true);
     try {
-      const blob = await resizeImage(file, targetW, targetH);
+      let blob: Blob;
+      if (mode === "dimensions") {
+        if (targetW < 1 || targetH < 1) return;
+        blob = await resizeImage(file, targetW, targetH);
+        toast({ title: "Resized!", description: `Image resized to ${targetW}×${targetH} pixels.` });
+      } else {
+        blob = await compressImageToSize(file, targetBytes);
+        const sizeKB = (blob.size / 1024).toFixed(0);
+        toast({ title: "Compressed!", description: `Image compressed to ${sizeKB} KB.` });
+      }
       setResizedBlob(blob);
       setResizedPreview(URL.createObjectURL(blob));
-      toast({ title: "Resized!", description: `Image resized to ${targetW}×${targetH} pixels.` });
     } catch {
-      toast({ title: "Resize failed", description: "Could not process this image.", variant: "destructive" });
+      toast({ title: "Processing failed", description: "Could not process this image.", variant: "destructive" });
     } finally {
       setProcessing(false);
     }
@@ -66,8 +82,9 @@ const ImageResizer = () => {
 
   const handleDownload = () => {
     if (!resizedBlob || !file) return;
-    const ext = file.name.replace(/.*\./, "");
-    const name = file.name.replace(/\.[^.]+$/, "") + `_${targetW}x${targetH}.jpg`;
+    const name = mode === "dimensions"
+      ? file.name.replace(/\.[^.]+$/, "") + `_${targetW}x${targetH}.jpg`
+      : file.name.replace(/\.[^.]+$/, "") + `_compressed.jpg`;
     downloadBlob(resizedBlob, name);
   };
 
@@ -87,9 +104,23 @@ const ImageResizer = () => {
             Image Resizer
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Resize photos for visa, passport & ID applications.
+            Resize or compress photos for visa, passport & ID applications.
           </p>
         </div>
+
+        {/* Mode tabs */}
+        <Tabs value={mode} onValueChange={(v) => setMode(v as "dimensions" | "filesize")} className="mb-6">
+          <TabsList className="grid w-full grid-cols-2 rounded-xl">
+            <TabsTrigger value="dimensions" className="gap-2 rounded-xl">
+              <Maximize className="h-4 w-4" />
+              By Dimensions
+            </TabsTrigger>
+            <TabsTrigger value="filesize" className="gap-2 rounded-xl">
+              <HardDrive className="h-4 w-4" />
+              By File Size
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {/* Upload area */}
         {!file ? (
@@ -150,50 +181,68 @@ const ImageResizer = () => {
                 </div>
               </div>
 
-              {/* Preset selector */}
+              {/* Controls */}
               <div className="space-y-3">
-                <label className="text-sm font-medium text-foreground">Target Size</label>
-                <Select value={selectedPreset} onValueChange={setSelectedPreset}>
-                  <SelectTrigger className="rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {IMAGE_PRESETS.map((p, i) => (
-                      <SelectItem key={i} value={String(i)}>
-                        <span className="font-medium">{p.label}</span>
-                        <span className="ml-2 text-xs text-muted-foreground">{p.description}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                {isCustom && (
-                  <div className="flex gap-3">
-                    <div className="flex-1 space-y-1">
-                      <label className="text-xs text-muted-foreground">Width (px)</label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={customWidth}
-                        onChange={(e) => setCustomWidth(Number(e.target.value))}
-                        className="rounded-xl"
-                      />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                      <label className="text-xs text-muted-foreground">Height (px)</label>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={customHeight}
-                        onChange={(e) => setCustomHeight(Number(e.target.value))}
-                        className="rounded-xl"
-                      />
-                    </div>
-                  </div>
+                {mode === "dimensions" ? (
+                  <>
+                    <label className="text-sm font-medium text-foreground">Target Dimensions</label>
+                    <Select value={selectedPreset} onValueChange={setSelectedPreset}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {IMAGE_PRESETS.map((p, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            <span className="font-medium">{p.label}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">{p.description}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isCustom && (
+                      <div className="flex gap-3">
+                        <div className="flex-1 space-y-1">
+                          <label className="text-xs text-muted-foreground">Width (px)</label>
+                          <Input type="number" min={1} value={customWidth} onChange={(e) => setCustomWidth(Number(e.target.value))} className="rounded-xl" />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <label className="text-xs text-muted-foreground">Height (px)</label>
+                          <Input type="number" min={1} value={customHeight} onChange={(e) => setCustomHeight(Number(e.target.value))} className="rounded-xl" />
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <label className="text-sm font-medium text-foreground">Target File Size</label>
+                    <Select value={selectedSizePreset} onValueChange={setSelectedSizePreset}>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SIZE_PRESETS.map((p, i) => (
+                          <SelectItem key={i} value={String(i)}>
+                            <span className="font-medium">{p.label}</span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {isCustomSize && (
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Size (KB)</label>
+                        <Input type="number" min={10} value={customSizeKB} onChange={(e) => setCustomSizeKB(Number(e.target.value))} className="rounded-xl" />
+                      </div>
+                    )}
+                    {file && (
+                      <p className="text-xs text-muted-foreground">
+                        Current size: {(file.size / 1024).toFixed(0)} KB
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
-              {/* Resize button */}
+              {/* Action button */}
               <Button
                 onClick={handleResize}
                 disabled={processing}
@@ -203,12 +252,17 @@ const ImageResizer = () => {
                 {processing ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Resizing…
+                    Processing…
                   </>
-                ) : (
+                ) : mode === "dimensions" ? (
                   <>
                     <ImageIcon className="h-5 w-5" />
                     Resize to {targetW}×{targetH}
+                  </>
+                ) : (
+                  <>
+                    <HardDrive className="h-5 w-5" />
+                    Compress to {isCustomSize ? `${customSizeKB} KB` : sizePreset.label}
                   </>
                 )}
               </Button>
@@ -221,16 +275,16 @@ const ImageResizer = () => {
                   className="overflow-hidden rounded-xl border border-border bg-card"
                 >
                   <div className="flex items-center justify-center p-4 bg-success/5">
-                    <img
-                      src={resizedPreview}
-                      alt="Resized"
-                      className="max-h-48 rounded-lg object-contain"
-                    />
+                    <img src={resizedPreview} alt="Resized" className="max-h-48 rounded-lg object-contain" />
                   </div>
                   <div className="flex items-center justify-between px-4 py-3 border-t border-border">
                     <div>
-                      <p className="text-sm font-medium text-foreground">{targetW}×{targetH} px</p>
-                      <p className="text-xs text-muted-foreground">Resized image ready</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {resizedBlob ? `${(resizedBlob.size / 1024).toFixed(0)} KB` : "Ready"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {mode === "dimensions" ? `${targetW}×${targetH} px` : "Compressed image"}
+                      </p>
                     </div>
                     <Button onClick={handleDownload} size="sm" className="gap-2 rounded-xl">
                       <Download className="h-4 w-4" />
