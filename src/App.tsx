@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppNav from "./components/AppNav";
 import Index from "./pages/Index";
 import ImageResizer from "./pages/ImageResizer";
+import PdfCompressor from "./pages/PdfCompressor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ const App = () => (
         <AppNav />
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/pdf-compressor" element={<PdfCompressor />} />
           <Route path="/image-resizer" element={<ImageResizer />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
