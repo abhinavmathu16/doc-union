@@ -131,7 +131,7 @@ const PdfCompressor = () => {
   const [customSizeKB, setCustomSizeKB] = useState("1024");
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState("");
-  const [result, setResult] = useState<{ blob: Blob; size: number } | null>(null);
+  const [result, setResult] = useState<{ blob: Blob; size: number; unchanged?: boolean } | null>(null);
   const { toast } = useToast();
 
   const targetKB = preset === "custom" ? Number(customSizeKB) || 1024 : Number(preset);
