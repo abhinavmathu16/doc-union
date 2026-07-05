@@ -174,8 +174,19 @@ const PdfCompressor = () => {
     setProgress("Starting compression…");
     try {
       const blob = await compressPdfToTarget(file, targetKB, setProgress);
-      setResult({ blob, size: blob.size });
-      toast({ title: "Compressed!", description: `Reduced to ${formatSize(blob.size)}` });
+      if (blob.size >= file.size) {
+        // Rasterization made the file bigger (common for text/vector PDFs).
+        // Keep the original file rather than offering a larger, degraded, non-searchable one.
+        setResult({ blob: new Blob([await file.arrayBuffer()], { type: "application/pdf" }), size: file.size, unchanged: true });
+        toast({
+          title: "Cannot compress further",
+          description: "This PDF is mostly text or vector graphics — compression would make it larger and blurry. The original file has been kept.",
+          variant: "destructive",
+        });
+      } else {
+        setResult({ blob, size: blob.size, unchanged: false });
+        toast({ title: "Compressed!", description: `Reduced to ${formatSize(blob.size)}` });
+      }
     } catch (err) {
       console.error(err);
       toast({ title: "Compression failed", description: "The PDF may be corrupted or password-protected.", variant: "destructive" });
@@ -184,6 +195,7 @@ const PdfCompressor = () => {
       setProgress("");
     }
   };
+
 
   const download = () => {
     if (!result) return;
