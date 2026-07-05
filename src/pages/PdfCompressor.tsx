@@ -212,7 +212,7 @@ const PdfCompressor = () => {
     setResult(null);
   };
 
-  const savings = file && result ? Math.max(0, Math.round((1 - result.size / file.size) * 100)) : 0;
+  const savings = file && result ? Math.round((1 - result.size / file.size) * 100) : 0;
 
   return (
     <div className="flex min-h-screen flex-col items-center px-4 py-16">
