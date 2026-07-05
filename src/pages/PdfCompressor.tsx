@@ -63,7 +63,9 @@ async function compressPdfToTarget(
     const pdfBytes = await newPdf.save();
     const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
 
-    bestBlob = blob;
+    if (!bestBlob || blob.size < bestBlob.size) {
+      bestBlob = blob;
+    }
 
     if (blob.size <= targetBytes) {
       // Under target — try higher quality
@@ -106,7 +108,10 @@ async function compressPdfToTarget(
     }
 
     const pdfBytes = await newPdf.save();
-    bestBlob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+    const fallbackBlob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+    if (!bestBlob || fallbackBlob.size < bestBlob.size) {
+      bestBlob = fallbackBlob;
+    }
   }
 
   return bestBlob!;
@@ -126,7 +131,7 @@ const PdfCompressor = () => {
   const [customSizeKB, setCustomSizeKB] = useState("1024");
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState("");
-  const [result, setResult] = useState<{ blob: Blob; size: number } | null>(null);
+  const [result, setResult] = useState<{ blob: Blob; size: number; unchanged?: boolean } | null>(null);
   const { toast } = useToast();
 
   const targetKB = preset === "custom" ? Number(customSizeKB) || 1024 : Number(preset);
@@ -169,8 +174,19 @@ const PdfCompressor = () => {
     setProgress("Starting compression…");
     try {
       const blob = await compressPdfToTarget(file, targetKB, setProgress);
-      setResult({ blob, size: blob.size });
-      toast({ title: "Compressed!", description: `Reduced to ${formatSize(blob.size)}` });
+      if (blob.size >= file.size) {
+        // Rasterization made the file bigger (common for text/vector PDFs).
+        // Keep the original file rather than offering a larger, degraded, non-searchable one.
+        setResult({ blob: new Blob([await file.arrayBuffer()], { type: "application/pdf" }), size: file.size, unchanged: true });
+        toast({
+          title: "Cannot compress further",
+          description: "This PDF is mostly text or vector graphics — compression would make it larger and blurry. The original file has been kept.",
+          variant: "destructive",
+        });
+      } else {
+        setResult({ blob, size: blob.size, unchanged: false });
+        toast({ title: "Compressed!", description: `Reduced to ${formatSize(blob.size)}` });
+      }
     } catch (err) {
       console.error(err);
       toast({ title: "Compression failed", description: "The PDF may be corrupted or password-protected.", variant: "destructive" });
@@ -179,6 +195,7 @@ const PdfCompressor = () => {
       setProgress("");
     }
   };
+
 
   const download = () => {
     if (!result) return;
@@ -195,7 +212,7 @@ const PdfCompressor = () => {
     setResult(null);
   };
 
-  const savings = file && result ? Math.max(0, Math.round((1 - result.size / file.size) * 100)) : 0;
+  const savings = file && result ? Math.round((1 - result.size / file.size) * 100) : 0;
 
   return (
     <div className="flex min-h-screen flex-col items-center px-4 py-16">
@@ -290,20 +307,31 @@ const PdfCompressor = () => {
               {result && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-file-item p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-foreground">Compressed Size</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {result.unchanged ? "Result Size (unchanged)" : "Compressed Size"}
+                    </p>
                     <p className="text-sm font-semibold text-primary">{formatSize(result.size)}</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">Savings</p>
-                    <p className="text-sm font-semibold text-foreground">{savings}% smaller</p>
-                  </div>
-                  {result.size > targetKB * 1024 && (
+                  {!result.unchanged && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Savings</p>
+                      <p className={`text-sm font-semibold ${savings < 0 ? "text-destructive" : "text-foreground"}`}>
+                        {savings >= 0 ? `${savings}% smaller` : `${Math.abs(savings)}% larger`}
+                      </p>
+                    </div>
+                  )}
+                  {result.unchanged && (
+                    <p className="text-xs text-muted-foreground">
+                      This PDF is mostly text or vector graphics. Rasterizing it would produce a larger, blurry, non‑searchable file, so the original is kept.
+                    </p>
+                  )}
+                  {!result.unchanged && result.size > targetKB * 1024 && (
                     <p className="text-xs text-destructive">
                       ⚠ Could not reach target size. This is the best compression achievable.
                     </p>
                   )}
                   <Button onClick={download} variant="secondary" className="w-full gap-2 rounded-xl">
-                    <FileDown className="h-4 w-4" /> Download Compressed PDF
+                    <FileDown className="h-4 w-4" /> {result.unchanged ? "Download Original PDF" : "Download Compressed PDF"}
                   </Button>
                 </motion.div>
               )}
