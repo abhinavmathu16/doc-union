@@ -307,20 +307,31 @@ const PdfCompressor = () => {
               {result && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-file-item p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-foreground">Compressed Size</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {result.unchanged ? "Result Size (unchanged)" : "Compressed Size"}
+                    </p>
                     <p className="text-sm font-semibold text-primary">{formatSize(result.size)}</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground">Savings</p>
-                    <p className="text-sm font-semibold text-foreground">{savings}% smaller</p>
-                  </div>
-                  {result.size > targetKB * 1024 && (
+                  {!result.unchanged && (
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">Savings</p>
+                      <p className={`text-sm font-semibold ${savings < 0 ? "text-destructive" : "text-foreground"}`}>
+                        {savings >= 0 ? `${savings}% smaller` : `${Math.abs(savings)}% larger`}
+                      </p>
+                    </div>
+                  )}
+                  {result.unchanged && (
+                    <p className="text-xs text-muted-foreground">
+                      This PDF is mostly text or vector graphics. Rasterizing it would produce a larger, blurry, non‑searchable file, so the original is kept.
+                    </p>
+                  )}
+                  {!result.unchanged && result.size > targetKB * 1024 && (
                     <p className="text-xs text-destructive">
                       ⚠ Could not reach target size. This is the best compression achievable.
                     </p>
                   )}
                   <Button onClick={download} variant="secondary" className="w-full gap-2 rounded-xl">
-                    <FileDown className="h-4 w-4" /> Download Compressed PDF
+                    <FileDown className="h-4 w-4" /> {result.unchanged ? "Download Original PDF" : "Download Compressed PDF"}
                   </Button>
                 </motion.div>
               )}
