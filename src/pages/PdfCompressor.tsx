@@ -108,7 +108,10 @@ async function compressPdfToTarget(
     }
 
     const pdfBytes = await newPdf.save();
-    bestBlob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+    const fallbackBlob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+    if (!bestBlob || fallbackBlob.size < bestBlob.size) {
+      bestBlob = fallbackBlob;
+    }
   }
 
   return bestBlob!;
