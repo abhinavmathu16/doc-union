@@ -63,7 +63,9 @@ async function compressPdfToTarget(
     const pdfBytes = await newPdf.save();
     const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
 
-    bestBlob = blob;
+    if (!bestBlob || blob.size < bestBlob.size) {
+      bestBlob = blob;
+    }
 
     if (blob.size <= targetBytes) {
       // Under target — try higher quality
